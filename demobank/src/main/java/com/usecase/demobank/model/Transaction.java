@@ -30,7 +30,6 @@ public class Transaction {
 
 	private String type;
 
-	@Min(value = 1L, message = "The amount should be greater than 1")
 	private Double amount;
 
 	@CreationTimestamp
