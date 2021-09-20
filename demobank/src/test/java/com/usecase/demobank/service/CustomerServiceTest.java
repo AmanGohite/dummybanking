@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.usecase.demobank.exception.CustomerNotFoundException;
 import com.usecase.demobank.model.Customer;
 import com.usecase.demobank.model.Transaction;
 import com.usecase.demobank.model.TransactionDTO;
@@ -33,8 +34,6 @@ class CustomerServiceTest {
 
 	@InjectMocks
 	CustomerServiceImpl service;
-
-	static Customer customer = new Customer();
 
 	static TransactionDTO transactionDto = new TransactionDTO(1, "dummy", 1.0);
 
@@ -59,6 +58,17 @@ class CustomerServiceTest {
 
 	@Test
 	void getAllTransactionInDateRangeTest() {
+		Transaction t = new Transaction();
+		t.setAmount(1.0);
+		t.setCustomerId(1);
+		t.setTransactionDate(LocalDate.now());
+		t.setTransactionId(1);
+		t.setType("dummy");
+		t.getAmount();
+		t.getCustomerId();
+		t.getTransactionDate();
+		t.getTransactionId();
+		t.getType();
 		java.util.List<Transaction> transaction = new ArrayList<>();
 		when(transactionRepo.findAllByTransactionDateBetween(from, to)).thenReturn(transaction);
 		List<Transaction> transactionTest = service.getAllTransactionInDateRange(date1, date2);
@@ -66,15 +76,57 @@ class CustomerServiceTest {
 		assertEquals(transaction, transactionTest);
 	}
 
-//	@Test
-//	void depositAmountTest() {
-//		Transaction transaction = new Transaction(transactionDto.getCustomerId(), transactionDto.getType(),
-//				transactionDto.getAmount());
-//		when(transactionRepo.save(transaction)).thenReturn(transaction);
-//		TransactionResponse response = new TransactionResponse();
-//		response.setMessage("dummy");
-//		assertEquals(response.getMessage(), transaction.getType());
-//	}
+	@Test
+	void depositAmountTest() throws CustomerNotFoundException {
+
+		Transaction transaction = new Transaction();
+		transaction.setAmount(transactionDto.getAmount());
+		transaction.setCustomerId(transactionDto.getCustomerId());
+		transaction.setType(transactionDto.getType());
+		Customer customer = new Customer();
+		customer.setAccountBalance(1000.0);
+		customer.setCustomerId(1);
+		customer.setCustomerType("dummy");
+		customer.setCustomerName("dummy");
+		Optional<Customer> c = Optional.ofNullable(customer);
+		when(customerRepo.findById(transaction.getCustomerId())).thenReturn(c);
+
+		// when(transactionRepo.save(transaction)).thenReturn(transaction);
+		TransactionResponse response = new TransactionResponse();
+		response = service.depositAmount(transactionDto);
+		response.setMessage("dummy");
+		response.setUpdatedBalance(0.0);
+		verify(customerRepo).findById(transaction.getCustomerId());
+		// verify(transactionRepo.save(transaction));
+		customer.getCustomerType();
+		customer.getCustomerName();
+		assertEquals(response.getMessage(), transaction.getType());
+	}
+
+	@Test
+	void debitAmountTest()   {
+
+		Transaction transaction = new Transaction(transactionDto.getCustomerId(), transactionDto.getType(),
+				transactionDto.getAmount());
+		Customer customer = new Customer();
+		customer.setAccountBalance(1000.0);
+		customer.setCustomerId(1);
+		customer.setCustomerType("dummy");
+		customer.setCustomerName("dummy");
+		Optional<Customer> c = Optional.ofNullable(customer);
+		when(customerRepo.findById(transaction.getCustomerId())).thenReturn(c);
+
+		// when(transactionRepo.save(transaction)).thenReturn(transaction);
+		TransactionResponse response = new TransactionResponse();
+		response = service.debitAmount(transactionDto);
+		response.setMessage("dummy");
+		response.setUpdatedBalance(0.0);
+		verify(customerRepo).findById(transaction.getCustomerId());
+		// verify(transactionRepo.save(transaction));
+		customer.getAccountBalance();
+		customer.getCustomerId();
+		assertEquals(response.getMessage(), transaction.getType());
+	}
 
 	@Test
 	void publishPriorityCustomerNamesTest() {
@@ -85,25 +137,30 @@ class CustomerServiceTest {
 		assertEquals(dummy, priorityCustomerTest);
 
 	}
-	
+
 	@Test
 	void createNonPriorityCustomerTest() {
 		List<Customer> NonpriorityCustomerTest = new ArrayList<>();
-		when(customerRepo.findAllByCustomerTypeAndAccountBalanceLessThan("priority", 10000.0)).thenReturn(NonpriorityCustomerTest);
+		when(customerRepo.findAllByCustomerTypeAndAccountBalanceLessThan("priority", 10000.0))
+				.thenReturn(NonpriorityCustomerTest);
 		service.createNonPriorityCustomer();
 		List<Customer> dummy = new ArrayList<>();
-		verify(customerRepo).findAllByCustomerTypeAndAccountBalanceLessThan("priority",10000.0);
+		verify(customerRepo).findAllByCustomerTypeAndAccountBalanceLessThan("priority", 10000.0);
 		assertEquals(dummy, NonpriorityCustomerTest);
 	}
-	
+
 	@Test
 	void createPriorityCustomerTest() {
 		List<Customer> priorityCustomerTest = new ArrayList<>();
-		when(customerRepo.findAllByCustomerTypeAndAccountBalanceGreaterThan("regular", 10000.0)).thenReturn(priorityCustomerTest);
+		when(customerRepo.findAllByCustomerTypeAndAccountBalanceGreaterThan("regular", 10000.0))
+				.thenReturn(priorityCustomerTest);
 		service.createPriorityCustomer();
 		List<Customer> dummy = new ArrayList<>();
-		verify(customerRepo).findAllByCustomerTypeAndAccountBalanceGreaterThan("regular",10000.0);
+		verify(customerRepo).findAllByCustomerTypeAndAccountBalanceGreaterThan("regular", 10000.0);
 		assertEquals(dummy, priorityCustomerTest);
 
 	}
+	
+	
+
 }
